@@ -22,20 +22,22 @@ export const useMapbox = (initialPoint) => {
   const [coords, setCoords] = React.useState(initialPoint)
 
   // function for adding markers
-  const addMarker = React.useCallback((ev) => {
-    const { lng, lat } = ev.lngLat
+  const addMarker = React.useCallback((ev, id) => {
+    const { lng, lat } = ev.lngLat || ev
     const marker = new mapboxgl.Marker()
-    marker.id = uuid()
+    marker.id = id ?? uuid()
     marker.setLngLat([lng, lat]).addTo(mapOne.current).setDraggable(true)
 
     markers.current[marker.id] = marker
 
-    // if marker already exists, ignore it
-    newMarker.current.next({
-      id: marker.id,
-      lng,
-      lat,
-    })
+    if (!id) {
+      // emit new marker
+      newMarker.current.next({
+        id: marker.id,
+        lng,
+        lat,
+      })
+    }
 
     // listen to drag event
     marker.on("drag", ({ target }) => {
@@ -49,6 +51,12 @@ export const useMapbox = (initialPoint) => {
         lat,
       })
     })
+  }, [])
+
+  // function for updating the marker
+  const updateMarkerPosition = React.useCallback((marker) => {
+    const { id, lng, lat } = marker
+    markers.current[id].setLngLat([lng, lat])
   }, [])
 
   React.useEffect(() => {
@@ -87,5 +95,6 @@ export const useMapbox = (initialPoint) => {
     newMarker$: newMarker.current,
     markerMovement$: markerMovement.current,
     setRef,
+    updateMarkerPosition,
   }
 }
